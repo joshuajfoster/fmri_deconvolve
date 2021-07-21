@@ -70,6 +70,40 @@ def read_paradigm_file(filepath):
     return eventTimes, condNums, eventDurs, condNames, nConds, seqDur
 
 #%%
+   
+def buildDesignMatrix_paramEst(cond,stimTimes,runNum,HRF):
+
+    import numpy as np
+    
+    nConds = np.unique(cond).shape[0] # number of conditions
+    nRuns = np.unique(runNum).shape[0] # number of runs
+    nTRs = runNum.shape[0] # number of TRs in full time series
+    nTRsPerRun = nTRs/nRuns
+    
+    # make design matrix # REVIEW: should make a design matrix function given an HRF in deconvolve tools
+    designMatrix = np.zeros([nTRs,nConds])
+    for c in range(nConds):
+        ts = np.zeros(nTRs)
+        condStimTimes = stimTimes[cond == c + 1] 
+        ts[condStimTimes.astype('int')] = 1
+        tmp = np.convolve(ts,HRF)
+        designMatrix[:,c] = tmp[0:nTRs]
+                  
+    # run specific terms
+    runTerms = np.zeros([nTRs,nRuns])
+    for r in range(nRuns):
+        runTerms[runNum == r + 1,r] = 1
+    
+    # concatenate the run terms to the design matrix
+    designMatrix = np.concatenate((designMatrix,runTerms),axis=1)
+    
+    # create condition index
+    condIdx = np.concatenate((np.array(range(nConds))+1,np.zeros(nRuns)))
+        
+    return designMatrix, condIdx
+
+
+#%%
 
 def buildDesignMatrix_deconvolve(cond,stimTimes,runNum,nTimes):
     
