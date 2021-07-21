@@ -71,7 +71,7 @@ def read_paradigm_file(filepath):
 
 #%%
 
-def design_matrix_deconvolve(cond,stimTimes,nTRs,nTimes):
+def buildDesignMatrix_deconvolve(cond,stimTimes,runNum,nTimes):
     
     import numpy as np # REVIEW: again, better to do this or to provide np as an input?
     
