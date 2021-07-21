@@ -76,6 +76,9 @@ def buildDesignMatrix_deconvolve(cond,stimTimes,runNum,nTimes):
     import numpy as np # REVIEW: again, better to do this or to provide np as an input?
     
     nConds = np.unique(cond).shape[0] # number of conditions
+    nRuns = np.unique(runNum).shape[0] # number of runs
+    nTRs = runNum.shape[0] # number of TRs in full time series
+    nTRsPerRun = nTRs/nRuns
 
     for c in range(nConds):
         ts = np.zeros(nTRs)
@@ -95,7 +98,14 @@ def buildDesignMatrix_deconvolve(cond,stimTimes,runNum,nTimes):
             designMatrix = np.concatenate((designMatrix,dm),axis=1)
             condIdx = np.concatenate((condIdx,(c+1)*np.ones(nTimes)))
             
+    # run specific terms
+    runTerms = np.zeros([nTRs,nRuns])
+    for r in range(nRuns):
+        runTerms[runNum == r + 1,r] = 1
     
-    # REVIEW: add run specific terms!!!
-            
+    # concatenate the run terms to the design matrix
+    designMatrix = np.concatenate((designMatrix,runTerms),axis=1)
+    condIdx = np.concatenate((condIdx,np.zeros(nRuns)))
+
+   
     return designMatrix, condIdx
