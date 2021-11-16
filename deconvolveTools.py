@@ -10,7 +10,40 @@ Created on Tue Jul 20 18:42:18 2021
 
 #%%
 
-# REVIEW: maybe read_paradigm_file belongs in a different module?? Not really deconvolution
+def create_parfile_list(run_numbers,suffix):
+    """
+    create a list of formatted paradigm file names
+   
+    Parameters
+    ----------
+    run_numbers (list of ints): list of run runmbers
+    suffix (str): suffix of paradigm files e.g. 'par'
+
+    Returns
+    -------
+    parfile_list (list): list of formatted paradigm file names
+
+    """
+    
+    parfile_list = []
+    
+    for r in run_numbers:
+      
+        if 1 <= r <= 9:
+            run_name = 'PAR-00' + str(r) + '.' + suffix            
+        elif 10 <= r <= 99:
+            run_name = 'PAR-0' + str(r) + '.' + suffix    
+        elif 100 <= r <= 999:
+            run_name = 'PAR-' + str(r) + '.' + suffix 
+        else:
+            run_name = 'invalid number'
+            
+        parfile_list.append(run_name)
+        
+    return parfile_list
+
+
+#%%
 
 def read_paradigm_file(filepath):
     """
@@ -68,6 +101,32 @@ def read_paradigm_file(filepath):
     nConds = np.unique(condNums).size
     
     return eventTimes, condNums, eventDurs, condNames, nConds, seqDur
+
+#%%
+    
+def compile_paradigm_files(file_dir,file_names,endBuffer):
+    
+    import deconvolveTools as dcvl
+    import numpy as np
+    
+    for r, idx in enumerate(file_names):
+        
+        filepath = file_dir + file_names[r]
+        
+        eventTimes, condNums, totaleventDurs, condNames, nConds, seqDur =  dcvl.read_paradigm_file(filepath)
+        
+        if r == 0:
+            trialTimes = eventTimes
+            cond = condNums
+            totalDur = seqDur + endBuffer
+            runNum = np.ones(seqDur + endBuffer)
+        else:
+            trialTimes = np.concatenate((trialTimes,totalDur+eventTimes))
+            cond = np.concatenate((cond,condNums))
+            runNum = np.concatenate((runNum,(r+1)*np.ones(seqDur+endBuffer)))
+            totalDur = totalDur + seqDur + endBuffer
+    
+    return trialTimes, cond, runNum, totalDur
 
 #%%
    
