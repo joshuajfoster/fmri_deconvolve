@@ -10,7 +10,6 @@ Created on Tue Jul 20 18:42:18 2021
 
 import numpy as np
 
-
 def create_parfile_list(run_numbers,suffix):
     """
     create a list of formatted paradigm file names
@@ -154,8 +153,6 @@ def buildDesignMatrix_paramEst(cond,stimTimes,runNum,HRF):
 
 
 def buildDesignMatrix_deconvolve(cond,stimTimes,runNum,nTimes):
-    
- #   import numpy as np # REVIEW: again, better to do this or to provide np as an input?
     
     nConds = np.unique(cond).shape[0] # number of conditions
     nRuns = np.unique(runNum).shape[0] # number of runs
