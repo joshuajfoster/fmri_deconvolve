@@ -8,7 +8,8 @@ Created on Tue Jul 20 18:42:18 2021
 @author: joshuafoster
 """
 
-#%%
+import numpy as np
+
 
 def create_parfile_list(run_numbers,suffix):
     """
@@ -43,8 +44,6 @@ def create_parfile_list(run_numbers,suffix):
     return parfile_list
 
 
-#%%
-
 def read_paradigm_file(filepath):
     """
     returns the content of a Freesurfer par file as numpy arrays. 
@@ -66,9 +65,7 @@ def read_paradigm_file(filepath):
     seqDur : duration of sequence in seconds.
     
     """
-      
-    import numpy as np # REVIEW: better to do this, or provide np as an input to the function
-    
+          
     # read in par file, grab event times and conditions
     f=open(filepath,"r")
     lines=f.readlines()
@@ -102,18 +99,14 @@ def read_paradigm_file(filepath):
     
     return eventTimes, condNums, eventDurs, condNames, nConds, seqDur
 
-#%%
     
 def compile_paradigm_files(file_dir,file_names,endBuffer):
-    
-    import deconvolveTools as dcvl
-    import numpy as np
-    
+
     for r, idx in enumerate(file_names):
         
         filepath = file_dir + file_names[r]
         
-        eventTimes, condNums, totaleventDurs, condNames, nConds, seqDur =  dcvl.read_paradigm_file(filepath)
+        eventTimes, condNums, totaleventDurs, condNames, nConds, seqDur = read_paradigm_file(filepath)
         
         if r == 0:
             trialTimes = eventTimes
@@ -128,11 +121,9 @@ def compile_paradigm_files(file_dir,file_names,endBuffer):
     
     return trialTimes, cond, runNum, totalDur
 
-#%%
    
 def buildDesignMatrix_paramEst(cond,stimTimes,runNum,HRF):
 
-    import numpy as np
     
     nConds = np.unique(cond).shape[0] # number of conditions
     nRuns = np.unique(runNum).shape[0] # number of runs
@@ -162,11 +153,9 @@ def buildDesignMatrix_paramEst(cond,stimTimes,runNum,HRF):
     return designMatrix, condIdx
 
 
-#%%
-
 def buildDesignMatrix_deconvolve(cond,stimTimes,runNum,nTimes):
     
-    import numpy as np # REVIEW: again, better to do this or to provide np as an input?
+ #   import numpy as np # REVIEW: again, better to do this or to provide np as an input?
     
     nConds = np.unique(cond).shape[0] # number of conditions
     nRuns = np.unique(runNum).shape[0] # number of runs
