@@ -8,14 +8,14 @@ Created on Tue Jul 20 18:58:09 2021
 
 #%%
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
-import deconvolveTools as dcvl
+import deconvolve as dcvl
 
 # simulation parameters
 TR = 1 # duration of TR
-startBuffer = 4 # REVIEW: not in use
-endBuffer = 16 # null period after start of sequence
+endBuffer = 16 # null period following sequence specified in par file
 noiseSD = 0.1 # SD of guassian noise added to simulated time series
 
 # HRF parameters
@@ -29,51 +29,34 @@ HRF = HRF/np.max(HRF)
 
 #%% load and concatenate paradigm files
     
-file_dir = '/Users/joshuafoster/Foster/repos/FBA_CRF_WEDGES/Subject Data/S013/ParFiles/'
-run_names = ['PAR-001.par','PAR-002.par','PAR-003.par','PAR-004.par','PAR-005.par','PAR-006.par','PAR-007.par','PAR-008.par','PAR-009.par','PAR-010.par']
-nRuns =  len(run_names)
 
-for r in range(nRuns):
-    
-    filepath = file_dir + run_names[r]
+file_dir = os.getcwd() + '/example_paradigm_files/'
+run_numbers = list(range(1,9+1))
+run_names = dcvl.create_parfile_list(run_numbers,'par')
 
-    eventTimes, condNums, eventDurs, condNames, nConds, seqDur =  dcvl.read_paradigm_file(filepath)
-    
-    if r == 0:
-        stimTimes = eventTimes
-        cond = condNums
-        totalDur = seqDur + endBuffer
-    else:
-        stimTimes = np.concatenate((stimTimes,totalDur+eventTimes))
-        cond = np.concatenate((cond,condNums))
-        totalDur = totalDur + seqDur + endBuffer
-        
-nTRs = totalDur # convert duration to TRs
 
+stimTimes, cond, runNum, totalDur = dcvl.compile_paradigm_files(file_dir,run_names,endBuffer)
+
+nRuns = len(np.unique(runNum))
+nConds = len(np.unique(cond))
+nTRs = int(totalDur/TR)
 
 
 #%% simulate fMRI data
 
-# make design matrix
-designMatrix = np.zeros([nTRs,nConds])
-for c in range(nConds):
-    ts = np.zeros(nTRs)
-    condStimTimes = stimTimes[cond == c + 1] 
-    ts[condStimTimes.astype('int')] = 1
-    tmp = np.convolve(ts,HRF)
-    designMatrix[:,c] = tmp[0:nTRs]
-
-# # plot design matrix
-# plt.imshow(designMatrix,cmap='viridis',aspect = 0.01)
+designMatrix, condIdx = dcvl.buildDesignMatrix_paramEst(cond,stimTimes,runNum,HRF)
 
 # generate betas for each condition
 betas = np.linspace(-1,1,nConds)
+betas = np.concatenate((betas,np.zeros(nRuns))) # add zeros for run terms in design matrix
 
 # simulate fMRI time series by multiplying deisgn matrix by random betas and adding gaissina noise
 fMRI = np.matmul(designMatrix,betas) + np.random.standard_normal(nTRs)*noiseSD
 
-#from scipy import stats
-#fMRI = stats.zscore(fMRI)
+# plot simulated BOLD time series
+#plt.figure()
+#plt.plot(range(nTRs), fMRI)
+#plt.xlabel('Time (s)')
 
 
 #%% perfom deconvolution
@@ -90,13 +73,13 @@ plt.figure()
 plt.plot(range(nTRs), fMRI, label='data')
 plt.plot(range(nTRs),pred, label='fit')
 plt.xlabel('Time (s)')
-plt.legend(['BOLD time-series', 'fit'])
-#plt.xlim([0,1000])
+plt.legend(['data time-series', 'fit'])
+plt.title('Full time-series')
     
 
 # build a design matrix for deconvolution
 nTimes = 20  # number of time points to deconvolve
-designMatrix, condIdx = dcvl.design_matrix_deconvolve(cond, stimTimes, nTRs, nTimes)
+designMatrix, condIdx = dcvl.buildDesignMatrix_deconvolve(cond, stimTimes, runNum, nTimes)
 
 # do deconvolution!
 designMatrix_pinv = np.linalg.pinv(designMatrix) 
@@ -115,8 +98,7 @@ for c in range(nConds):
     ground_truth = betas[c]*HRF
     plt.plot(range(nTimes),ground_truth,color=colors[c])
     plt.plot(range(nTimes),deconvolvedResp[c,:],color=colors[c],linestyle='--')
-    
-    plt.xlabel('Times (s)')
-    # set x-ticks
-    # - simulated response, -- deconvolved response
-    # y label
+plt.xlim([0,nTimes-1])
+plt.xlabel('Times (s)')
+plt.ylabel('Response')
+plt.legend(['ground truth','deconvolved response'])
