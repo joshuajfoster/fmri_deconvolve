@@ -121,7 +121,7 @@ def compile_paradigm_files(file_dir,file_names,endBuffer):
     return trialTimes, cond, runNum, totalDur
 
    
-def buildDesignMatrix_paramEst(cond,stimTimes,runNum,HRF):
+def buildDesignMatrix_paramEst(cond,stimTimes,runNum,HRF,include_runterms=0):
 
     
     nConds = np.unique(cond).shape[0] # number of conditions
@@ -137,22 +137,22 @@ def buildDesignMatrix_paramEst(cond,stimTimes,runNum,HRF):
         ts[condStimTimes.astype('int')] = 1
         tmp = np.convolve(ts,HRF)
         designMatrix[:,c] = tmp[0:nTRs]
+        
+    condIdx = np.array(range(nConds))+1
                   
-    # run specific terms
-    runTerms = np.zeros([nTRs,nRuns])
-    for r in range(nRuns):
-        runTerms[runNum == r + 1,r] = 1
+    if include_runterms == 1:
+        
+        runTerms = np.zeros([nTRs,nRuns])
+        for r in range(nRuns):
+            runTerms[runNum == r + 1,r] = 1
     
-    # concatenate the run terms to the design matrix
-    designMatrix = np.concatenate((designMatrix,runTerms),axis=1)
-    
-    # create condition index
-    condIdx = np.concatenate((np.array(range(nConds))+1,np.zeros(nRuns)))
+        designMatrix = np.concatenate((designMatrix,runTerms),axis=1)
+        condIdx = np.concatenate((condIdx,np.zeros(nRuns)),axis=0)
         
     return designMatrix, condIdx
 
 
-def buildDesignMatrix_deconvolve(cond,stimTimes,runNum,nTimes):
+def buildDesignMatrix_deconvolve(cond,stimTimes,runNum,nTimes,include_runterms=0):
     
     nConds = np.unique(cond).shape[0] # number of conditions
     nRuns = np.unique(runNum).shape[0] # number of runs
@@ -175,16 +175,15 @@ def buildDesignMatrix_deconvolve(cond,stimTimes,runNum,nTimes):
             condIdx = np.ones(nTimes)
         else:
             designMatrix = np.concatenate((designMatrix,dm),axis=1)
-            condIdx = np.concatenate((condIdx,(c+1)*np.ones(nTimes)))
-            
-    # run specific terms
-    runTerms = np.zeros([nTRs,nRuns])
-    for r in range(nRuns):
-        runTerms[runNum == r + 1,r] = 1
-    
-    # concatenate the run terms to the design matrix
-    designMatrix = np.concatenate((designMatrix,runTerms),axis=1)
-    condIdx = np.concatenate((condIdx,np.zeros(nRuns)))
+            condIdx = np.concatenate((condIdx,(c+1)*np.ones(nTimes)))            
 
-   
+    if include_runterms == 1:
+        
+        runTerms = np.zeros([nTRs,nRuns])
+        for r in range(nRuns):
+            runTerms[runNum == r + 1,r] = 1
+    
+        designMatrix = np.concatenate((designMatrix,runTerms),axis=1)
+        condIdx = np.concatenate((condIdx,np.zeros(nRuns)),axis=0)
+
     return designMatrix, condIdx
